@@ -1,0 +1,11 @@
+# Personal data never belongs in the repository. The app keeps it outside this folder
+# (%APPDATA%\GameTracker), and these rules are a second line of defence.
+store.json
+store.json.*
+*.broken-*
+data/
+.env
+.env.*
+*.log
+node_modules/
+.claude/

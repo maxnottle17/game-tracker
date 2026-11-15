@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game Tracker</title>
+  <link rel="icon" type="image/png" href="/icon.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Game Tracker</h1>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-view="board" role="tab">Leaderboard</button>
+      <button class="tab" data-view="stats" role="tab">Stats</button>
+      <button class="tab" data-view="accounts" role="tab">Accounts</button>
+    </nav>
+    <div class="top-right">
+      <span id="sync-status" class="muted"></span>
+      <button id="sync-all" class="btn">Sync now</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-board">
+      <div id="tiles" class="tiles"></div>
+      <div class="controls">
+        <div id="chips" class="chips"></div>
+        <input id="search" type="search" placeholder="Search games" aria-label="Search games">
+        <select id="sort" aria-label="Sort by">
+          <option value="hours">Most played</option>
+          <option value="ach">Most achievements</option>
+          <option value="pct">Highest completion</option>
+          <option value="recent">Recently played</option>
+        </select>
+        <label class="check"><input id="combine" type="checkbox" checked> Combine same game across platforms</label>
+        <label class="check"><input id="versions" type="checkbox"> Group all versions of a game (e.g. Minecraft iOS + Windows)</label>
+      </div>
+      <ol id="board" class="board"></ol>
+      <p id="empty" class="empty" hidden></p>
+    </section>
+
+    <section id="view-stats" hidden></section>
+
+    <section id="view-accounts" hidden>
+      <p class="muted intro">Link each account once. Keys and sign-in tokens are stored only on this PC, and your passwords are never entered here.</p>
+      <div id="accounts" class="accounts"></div>
+      <p class="footer"><button id="quit" class="btn ghost">Quit Game Tracker</button></p>
+    </section>
+  </main>
+
+  <div id="tip" class="tip" hidden></div>
+  <script src="/stats.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
