@@ -1,6 +1,6 @@
 # Game Tracker
 
-A small Windows app that pulls hours played and achievements from Steam, Xbox, PlayStation and Epic Games into one leaderboard, with a stats page (account ages, play time over the years, what was being played when).
+A small Windows app that pulls hours played and achievements from Steam, Xbox, PlayStation, Nintendo and Epic Games into one leaderboard, with a stats page (account ages, play time over the years, what was being played when).
 
 It runs entirely on your own PC: a Node server on `127.0.0.1:47830` and a web UI opened in an Edge app window. There are no dependencies to install.
 
@@ -24,11 +24,14 @@ The Accounts tab has step-by-step instructions. You never enter a password; you 
 | Steam | Official Web API key | Profile "Game details" must be public. |
 | Xbox | [OpenXBL](https://xbl.io) personal key | Third-party service; free plan is rate limited. |
 | PlayStation | NPSSO token | Unofficial (same calls as the PlayStation app). Lasts about two months. |
+| Nintendo | Link copied from Nintendo sign-in | Unofficial (the play history shown in the My Nintendo app). Play time and dates only; Nintendo has no achievements. |
 | Epic Games | Launcher authorization code | Unofficial; achievements are often missing. |
 
 ## Where your data lives
 
-Keys, tokens, your game list and play history are stored in `%APPDATA%\GameTracker\store.json` on your PC. Nothing personal is kept in this folder, and the server refuses requests from anything but its own window.
+The first time the app runs it asks you to choose a folder for your private data: account keys and sign-in tokens, your game list and your play history. Everything is kept in `store.json` in that folder, and you can move it later from the Accounts tab. The only other file is `%APPDATA%\GameTracker\config.json`, which just remembers where that folder is.
+
+Nothing personal is kept in the app folder, and the server refuses requests from anything but its own window.
 
 ## What is exact and what is estimated
 
@@ -36,4 +39,4 @@ Totals, achievements and unlock dates come straight from the platforms. No platf
 
 ## Credits
 
-The PlayStation calls follow [psn-api](https://github.com/achievements-app/psn-api) and the Epic sign-in follows [Legendary](https://github.com/derrod/legendary).
+The Nintendo sign-in follows the approach used by community tools such as the Raycast "Switch Game Play History" extension. The PlayStation calls follow [psn-api](https://github.com/achievements-app/psn-api) and the Epic sign-in follows [Legendary](https://github.com/derrod/legendary).

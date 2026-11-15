@@ -1,9 +1,9 @@
 :root {
   --bg: #0f1218; --panel: #181d27; --panel-2: #1f2633; --line: #2a3342;
   --text: #e8ecf3; --muted: #8e9ab0; --accent: #f5b942; --bad: #ff7b72; --good: #5fd38d;
-  --steam: #66c0f4; --xbox: #3ddc6b; --psn: #b9a3ff; --epic: #f0a07a;
+  --steam: #66c0f4; --xbox: #3ddc6b; --psn: #b9a3ff; --epic: #d9bf5a; --nintendo: #f08aa8;
   /* Chart fills: one fixed colour per platform, checked to stay distinguishable for colour-blind viewers. */
-  --c-steam: #3d96d8; --c-xbox: #2fae58; --c-psn: #9d7be8; --c-epic: #d2714a;
+  --c-steam: #3d96d8; --c-xbox: #2fae58; --c-psn: #9d7be8; --c-nintendo: #c9517f; --c-epic: #a8902a;
 }
 
 /* ---------- stats tab ---------- */
@@ -20,7 +20,7 @@
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
-.sw.steam { background: var(--c-steam); } .sw.xbox { background: var(--c-xbox); } .sw.psn { background: var(--c-psn); } .sw.epic { background: var(--c-epic); }
+.sw.steam { background: var(--c-steam); } .sw.xbox { background: var(--c-xbox); } .sw.psn { background: var(--c-psn); } .sw.epic { background: var(--c-epic); } .sw.nintendo { background: var(--c-nintendo); }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
 .panel-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
@@ -36,7 +36,7 @@
 .cols { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 2px; }
 .col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 2px; align-items: center; cursor: default; }
 .col i { display: block; width: 100%; max-width: 46px; flex: none; }
-.col i.steam { background: var(--c-steam); } .col i.xbox { background: var(--c-xbox); } .col i.psn { background: var(--c-psn); } .col i.epic { background: var(--c-epic); } .col i.one { background: var(--accent); }
+.col i.steam { background: var(--c-steam); } .col i.xbox { background: var(--c-xbox); } .col i.psn { background: var(--c-psn); } .col i.epic { background: var(--c-epic); } .col i.nintendo { background: var(--c-nintendo); } .col i.one { background: var(--accent); }
 .col i:last-of-type { border-radius: 4px 4px 0 0; }
 .col.thin i:last-of-type { border-radius: 2px 2px 0 0; }
 .col:hover { background: rgba(255, 255, 255, .05); }
@@ -130,7 +130,7 @@ div.cover { display: grid; place-items: center; color: var(--muted); font-weight
 .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
 .badge { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; opacity: .9; white-space: nowrap; }
-.p-steam { color: var(--steam); } .p-xbox { color: var(--xbox); } .p-psn { color: var(--psn); } .p-epic { color: var(--epic); }
+.p-steam { color: var(--steam); } .p-xbox { color: var(--xbox); } .p-psn { color: var(--psn); } .p-epic { color: var(--epic); } .p-nintendo { color: var(--nintendo); }
 .bar { height: 4px; background: var(--panel-2); border-radius: 2px; margin-top: 6px; overflow: hidden; }
 .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
 .hours { text-align: right; font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -160,6 +160,15 @@ div.cover { display: grid; place-items: center; color: var(--muted); font-weight
 .note { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; }
 .caveat { font-size: 12.5px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; margin: 10px 0 0; }
 .footer { margin-top: 26px; text-align: center; }
+.dataloc { margin-top: 14px; }
+.dataloc .path { font-family: Consolas, monospace; font-size: 13px; word-break: break-all; }
+.folder-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.folder-form input { flex: 1; min-width: 240px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-family: Consolas, monospace; font-size: 13px; }
+.setup { max-width: 640px; margin: 8vh auto 0; padding: 0 24px; }
+.setup .card { padding: 24px 26px; }
+.setup h2 { font-size: 20px; margin: 0 0 8px; }
+.setup p { color: var(--muted); margin: 8px 0; }
+.setup ul { color: var(--muted); font-size: 13.5px; padding-left: 20px; }
 
 @media (max-width: 760px) {
   .row { grid-template-columns: 30px minmax(0, 1fr) 90px; }

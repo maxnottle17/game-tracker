@@ -4,6 +4,7 @@ const PLATFORMS = {
   steam: { label: 'Steam', short: 'Steam' },
   xbox: { label: 'Xbox', short: 'Xbox' },
   psn: { label: 'PlayStation', short: 'PS' },
+  nintendo: { label: 'Nintendo', short: 'Nintendo' },
   epic: { label: 'Epic Games', short: 'Epic' },
 };
 
@@ -279,13 +280,22 @@ function steps(id) {
     fields: [['npsso', 'NPSSO token', 'password']],
     caveat: 'Unofficial: uses the same service as the PlayStation phone app. The link lasts about two months, then needs a fresh token. Play time covers PS4/PS5 games; older games show trophies only.',
   };
+  if (id === 'nintendo') return {
+    steps: [
+      ['Open ', a(state.nintendoLoginUrl, 'the Nintendo sign-in page'), ' and sign in to your Nintendo Account.'],
+      ['On the page that follows, do NOT click the red ', h('b', {}, 'Select this account'), ' button. Right-click it and choose ', h('b', {}, 'Copy link address'), '.'],
+      ['Paste the copied link below. It starts with ', h('code', {}, 'npf5c38e31cd085304b://auth'), '.'],
+    ],
+    fields: [['url', 'Copied link', 'password']],
+    caveat: "Unofficial: reads the play history shown in Nintendo's own phone app, for Switch and Switch 2 games. Nintendo could object to third-party tools using an account this way, so link it only if you accept that risk. Play time and first/last played dates are available; Nintendo has no achievements.",
+  };
   return {
     steps: [
       ['Open ', a(state.epicLoginUrl, 'the Epic sign-in page'), ' and sign in.'],
       ['You will land on a page of text. Copy the ', h('code', {}, 'authorizationCode'), ' value (or the whole page) and paste it below within a few minutes.'],
     ],
     fields: [['code', 'Authorization code', 'password']],
-    caveat: 'Unofficial and the least dependable of the four: it signs in the way the Epic launcher does. Play time usually works; achievements are often missing and "last played" is not available.',
+    caveat: 'Unofficial and the least dependable of the platforms: it signs in the way the Epic launcher does. Play time usually works; achievements are often missing and "last played" is not available.',
   };
 }
 
@@ -340,6 +350,59 @@ function renderAccounts() {
 
 // ---------- shell ----------
 
+// A text box + Browse button for picking a folder; used on first run and when moving the data later.
+function folderForm(initial, label, onDone) {
+  const input = h('input', { type: 'text', value: initial || '', spellcheck: false, 'aria-label': 'Folder path' });
+  const msg = h('p', { class: 'msg bad' });
+  const go = h('button', { class: 'btn', type: 'submit' }, label);
+  const browse = h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
+    browse.disabled = true; browse.textContent = 'Choosing…';
+    try { const r = await api('/api/browse', {}); if (r.dir) input.value = r.dir; } catch { /* type the path instead */ }
+    browse.disabled = false; browse.textContent = 'Browse…';
+  } }, 'Browse…');
+  return h('form', { onsubmit: async (e) => {
+    e.preventDefault();
+    msg.textContent = ''; go.disabled = true;
+    try { state = await api('/api/data-dir', { dir: input.value }); onDone(); } catch (err) { msg.textContent = err.message; }
+    go.disabled = false;
+  } }, h('div', { class: 'folder-form' }, input, browse, go), msg);
+}
+
+function renderSetup() {
+  document.querySelector('main').hidden = true;
+  document.querySelector('.tabs').hidden = true;
+  $('sync-all').hidden = true;
+  $('sync-status').textContent = '';
+  const box = $('setup');
+  box.hidden = false;
+  if (box.childElementCount) return; // built once, so typing is not wiped by the next refresh
+  box.append(h('div', { class: 'card' },
+    h('h2', {}, 'Welcome to Game Tracker'),
+    state.missingDir
+      ? h('p', { class: 'msg bad' }, `Your data folder could not be found: ${state.missingDir}. Reconnect that drive and restart the app, or choose a folder below (choosing the same folder again picks your data back up).`)
+      : h('p', {}, 'First, choose where Game Tracker keeps your private data on this PC.'),
+    h('ul', {},
+      h('li', {}, 'This folder will hold your account keys and sign-in tokens, your game list and your play history.'),
+      h('li', {}, 'It stays on this PC. Nothing in it is uploaded anywhere.'),
+      h('li', {}, 'Pick somewhere only you can open. You can move it later from the Accounts tab.')),
+    folderForm(state.missingDir || state.defaultDir, 'Use this folder', () => { box.replaceChildren(); render(); poll(); })));
+}
+
+function renderDataLocation() {
+  const box = $('data-loc');
+  if (box.querySelector('form')) return; // a move is being typed in: leave it alone
+  const holder = h('div', {});
+  box.replaceChildren(
+    h('h2', {}, 'Where your data is kept'),
+    h('p', { class: 'state' }, 'Account keys, sign-in tokens, game list and play history are stored in this folder on this PC:'),
+    h('p', { class: 'path' }, state.dataDir || ''),
+    state.demo ? null : h('div', { class: 'actions' }, h('button', { class: 'btn ghost', onclick: (e) => {
+      e.target.hidden = true;
+      holder.append(folderForm(state.dataDir, 'Move data here', () => { box.replaceChildren(); render(); }));
+    } }, 'Move to another folder…')),
+    holder);
+}
+
 function renderTop() {
   const accs = Object.values(state.accounts);
   const busy = accs.some((a) => a.syncing);
@@ -352,6 +415,12 @@ function renderTop() {
 }
 
 function render() {
+  if (state.needsSetup) { renderSetup(); return; }
+  $('setup').hidden = true;
+  document.querySelector('main').hidden = false;
+  document.querySelector('.tabs').hidden = false;
+  $('sync-all').hidden = false;
+  renderDataLocation();
   renderTop();
   renderBoard();
   renderStats();
@@ -367,7 +436,7 @@ let timer = null;
 async function poll() {
   clearTimeout(timer);
   try { state = await api('/api/state'); render(); } catch { /* app closed */ }
-  const busy = state && Object.values(state.accounts).some((a) => a.syncing);
+  const busy = state && state.accounts && Object.values(state.accounts).some((a) => a.syncing);
   timer = setTimeout(poll, busy ? 1500 : 60000);
 }
 

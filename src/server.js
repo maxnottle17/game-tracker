@@ -2,6 +2,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { execFile } = require('child_process');
 const store = require('./store');
 
 const PORT = Number(process.env.PORT) || 47830;
@@ -11,6 +12,7 @@ const PLATFORMS = {
   xbox: require('./platforms/xbox'),
   psn: require('./platforms/psn'),
   epic: require('./platforms/epic'),
+  nintendo: require('./platforms/nintendo'),
 };
 const AUTO_SYNC_MS = 6 * 3600e3;
 
@@ -20,14 +22,20 @@ const syncing = {};
 async function syncPlatform(id) {
   const data = store.get();
   const account = data.accounts[id];
-  if (!account || syncing[id] || store.DEMO) return;
+  if (!account || syncing[id] || store.DEMO || !store.configured()) return;
   syncing[id] = true;
   const cache = data.cache[id] || (data.cache[id] = {});
   try {
     const result = await PLATFORMS[id].sync(account, cache);
     if (!data.accounts[id]) return; // unlinked while syncing
     if (result.accountPatch) Object.assign(data.accounts[id], result.accountPatch);
-    recordHistory(id, result.games);
+    if (result.daily) {
+      // The platform reports exact minutes per day itself, so use those as they are.
+      for (const d of result.daily) (data.history[d.date] || (data.history[d.date] = {}))[`${id}:${d.id}`] = d.minutes;
+      if (!data.trackingSince) data.trackingSince = new Date().toISOString();
+    } else {
+      recordHistory(id, result.games);
+    }
     data.games[id] = result.games;
     data.sync[id] = { at: new Date().toISOString(), ok: true, notes: result.notes || [] };
   } catch (e) {
@@ -72,10 +80,15 @@ function recordHistory(id, games) {
 }
 
 function syncAll() {
+  if (!store.configured()) return;
   for (const id of Object.keys(PLATFORMS)) syncPlatform(id);
 }
 
 function publicState() {
+  if (!store.configured()) {
+    // First run (or the chosen folder has gone missing): the UI shows the folder picker.
+    return { needsSetup: true, defaultDir: store.defaultDir, missingDir: store.missingDir() };
+  }
   const data = store.get();
   const accounts = {};
   const games = [];
@@ -91,7 +104,8 @@ function publicState() {
     };
     if (a) for (const g of data.games[id] || []) games.push({ ...g, platform: id });
   }
-  return { accounts, games, history: data.history || {}, trackingSince: data.trackingSince || null, epicLoginUrl: PLATFORMS.epic.LOGIN_URL, demo: store.DEMO };
+  return { accounts, games, history: data.history || {}, trackingSince: data.trackingSince || null, dataDir: store.dataDir(),
+    epicLoginUrl: PLATFORMS.epic.LOGIN_URL, nintendoLoginUrl: PLATFORMS.nintendo.loginUrl(), demo: store.DEMO };
 }
 
 function send(res, status, body, type = 'application/json') {
@@ -123,6 +137,26 @@ function readBody(req) {
   });
 }
 
+// Opens the standard Windows "choose a folder" window and returns the chosen path ('' if cancelled).
+function pickFolder() {
+  if (process.platform !== 'win32') return Promise.resolve('');
+  const script = [
+    'Add-Type -AssemblyName System.Windows.Forms',
+    '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8',
+    '$owner = New-Object System.Windows.Forms.Form -Property @{ TopMost = $true; ShowInTaskbar = $false; Opacity = 0 }',
+    '$owner.Show()',
+    '$d = New-Object System.Windows.Forms.FolderBrowserDialog',
+    "$d.Description = 'Choose where Game Tracker keeps your data'",
+    '$d.ShowNewFolderButton = $true',
+    "if ($d.ShowDialog($owner) -eq 'OK') { [Console]::Out.Write($d.SelectedPath) }",
+    '$owner.Close()',
+  ].join('; ');
+  return new Promise((resolve) => {
+    execFile('powershell.exe', ['-NoProfile', '-STA', '-Command', script], { timeout: 300000, encoding: 'utf8' },
+      (err, stdout) => resolve(err ? '' : String(stdout).trim()));
+  });
+}
+
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 // The window opens at this path (not "/") so Windows treats it as a different app from
 // other local tools on 127.0.0.1 and gives it its own taskbar button.
@@ -145,6 +179,15 @@ async function handle(req, res) {
     const body = await readBody(req);
     const id = parts[2];
     const data = store.get();
+
+    if (parts[1] === 'browse') return send(res, 200, { dir: await pickFolder() });
+    if (parts[1] === 'data-dir') {
+      const firstRun = !store.configured();
+      try { store.setDir(body.dir); } catch (e) { return send(res, 400, { error: e.message }); }
+      if (firstRun) syncAll(); // an adopted folder may already have linked accounts
+      return send(res, 200, publicState());
+    }
+    if (!store.configured()) return send(res, 409, { error: 'Choose a data folder first.' });
 
     if (parts[1] === 'sync' && !id) { syncAll(); return send(res, 200, publicState()); }
     if (parts[1] === 'quit') { send(res, 200, { ok: true }); setTimeout(() => process.exit(0), 200); return; }
@@ -192,8 +235,10 @@ server.on('error', (e) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`Game Tracker running at http://127.0.0.1:${PORT}${store.DEMO ? ' (demo data)' : ''}`);
-  const data = store.get();
-  const stale = (id) => !data.sync[id] || Date.now() - Date.parse(data.sync[id].at) > 3600e3;
-  for (const id of Object.keys(PLATFORMS)) if (stale(id)) syncPlatform(id);
+  if (store.configured()) {
+    const data = store.get();
+    const stale = (id) => !data.sync[id] || Date.now() - Date.parse(data.sync[id].at) > 3600e3;
+    for (const id of Object.keys(PLATFORMS)) if (stale(id)) syncPlatform(id);
+  }
   setInterval(syncAll, AUTO_SYNC_MS).unref();
 });

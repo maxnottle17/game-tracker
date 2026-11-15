@@ -8,7 +8,7 @@ module.exports = function demo() {
   const dated = (store) => {
     for (const [platform, list] of Object.entries(store.games)) {
       for (const game of list) {
-        if (platform === 'epic' || game.lastPlayed === null) continue;
+        if (platform === 'epic' || platform === 'nintendo' || game.lastPlayed === null) continue;
         const end = Date.parse(game.lastPlayed);
         const start = end - (200 + rnd() * 2600) * 864e5;
         if (platform === 'psn') game.firstPlayed = new Date(start).toISOString();
@@ -37,6 +37,7 @@ module.exports = function demo() {
     trackingSince: day(30),
     accounts: {
       steam: { name: 'DemoPlayer', created: day(3400) }, xbox: { name: 'DemoTag' }, psn: { name: 'demo_psn' }, epic: { name: 'DemoEpic' },
+      nintendo: { name: 'DemoNin', created: day(2900) },
     },
     games: {
       steam: [
@@ -59,12 +60,18 @@ module.exports = function demo() {
         g('31', 'Tiny Kingdoms', 22.5, 4, 80, null), g('32', 'Brickfall', 9.2, null, null, null),
         g('33', 'Cubeworld: Java Edition', 88, null, null, null),
       ],
+      nintendo: [
+        { ...g('41', 'Kart Carnival', 210.4, null, null, 6), firstPlayed: day(2800), device: 'HAC' },
+        { ...g('42', 'Island Neighbours', 356, null, null, 45), firstPlayed: day(2400), device: 'HAC' },
+        { ...g('43', 'Cubeworld', 47.5, null, null, 200), firstPlayed: day(1900), device: 'HAC' },
+      ],
     },
     sync: {
       steam: { at: day(0.01), ok: true, notes: [] },
       xbox: { at: day(0.01), ok: true, notes: ["1 game(s) have no play time on Xbox's records (usually Xbox 360 games)."] },
       psn: { at: day(0.01), ok: true, notes: [] },
       epic: { at: day(0.01), ok: true, notes: ['Achievements could not be read for 1 game(s).'] },
+      nintendo: { at: day(0.01), ok: true, notes: [] },
     },
     cache: {},
   });

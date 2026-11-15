@@ -9,7 +9,7 @@
 //  - The "recorded" chart is exact, but only exists from the day the app started tracking.
 
 const statsView = { mode: 'year', sig: '' };
-const PLATFORM_ORDER = ['steam', 'xbox', 'psn', 'epic'];
+const PLATFORM_ORDER = ['steam', 'xbox', 'psn', 'nintendo', 'epic'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const EARLIEST = Date.UTC(2000, 0, 1);
@@ -65,8 +65,11 @@ function buildModel() {
     let start = d.points[0]; let end = d.points[0];
     for (const p of d.points) { if (p < start) start = p; if (p > end) end = p; }
     const a = monthIndex(start); const z = monthIndex(end); const n = z - a + 1;
-    for (let m = a; m <= z; m++) add(bucket(months, m), g, (g.minutes * 0.5) / n);
-    for (const p of d.points) add(bucket(months, monthIndex(p)), g, (g.minutes * 0.5) / d.points.length);
+    // With unlock dates: half evenly, half following the unlocks. With only a first and
+    // last played date there is nothing to follow, so the whole total is spread evenly.
+    const even = d.events.length ? 0.5 : 1;
+    for (let m = a; m <= z; m++) add(bucket(months, m), g, (g.minutes * even) / n);
+    for (const p of d.events) add(bucket(months, monthIndex(p)), g, (g.minutes * (1 - even)) / d.events.length);
 
     const k = normName(g.name);
     const s = spans.get(k) || { name: cleanName(g.name), minutes: 0, start, end, platform: g.platform, top: 0 };
@@ -383,7 +386,7 @@ function renderStats() {
     lifespans(model),
 
     h('h2', {}, 'Achievements over time'),
-    h('p', { class: 'cap' }, 'Exact unlock dates from Steam and Xbox. PlayStation and Epic do not provide them here.'),
+    h('p', { class: 'cap' }, 'Exact unlock dates from Steam and Xbox. PlayStation and Epic do not provide them here, and Nintendo has no achievements.'),
     achievementCharts(model),
 
     h('h2', {}, 'Recorded play, last 30 days'),
